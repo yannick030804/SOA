@@ -20,21 +20,23 @@ int checkParams (int argc, char *argv[]) {
 }
 
 FILE *openFile (char *filename) {
-    FILE *fp;
+    FILE *fp = NULL;
     char path[256];
+    const char *searchPaths[] = {
+        "data/ext2",
+        "data/fat16",
+        "../data/ext2",
+        "../data/fat16"
+    };
+    size_t i;
 
-    snprintf(path, sizeof(path), "../data/ext2/%s", filename);
-    fp = fopen(path, "rb");
+    for (i = 0; i < sizeof(searchPaths) / sizeof(searchPaths[0]); i++) {
+        snprintf(path, sizeof(path), "%s/%s", searchPaths[i], filename);
+        fp = fopen(path, "rb");
 
-    if (fp != NULL) {
-        return fp;
-    }
-
-    snprintf(path, sizeof(path), "../data/fat16/%s", filename);
-    fp = fopen(path, "rb");
-
-    if (fp != NULL) {
-        return fp;
+        if (fp != NULL) {
+            return fp;
+        }
     }
 
     return NULL;

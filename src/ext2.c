@@ -1,6 +1,18 @@
 #include "ext2.h"
 
-void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, char* lastMountStr, char* lastWriteStr, char* lastCheckStr) {
+static void format_timestamp(unsigned int rawTime, char *buffer, size_t bufferSize) {
+    time_t timestamp = (time_t) rawTime;
+    struct tm *timeInfo = localtime(&timestamp);
+
+    if (timeInfo == NULL || strftime(buffer, bufferSize, "%a %b %d %H:%M:%S %Y", timeInfo) == 0) {
+        snprintf(buffer, bufferSize, "Unavailable");
+        return;
+    }
+
+    buffer[bufferSize - 1] = '\0';
+}
+
+void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, const char *lastMountStr, const char *lastWriteStr, const char *lastCheckStr) {
     printf("------ Filesystem Information ------\n\n");
     printf("Filesystem: EXT2\n\n");
 
@@ -22,13 +34,16 @@ void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, char* lastMountStr, char* 
 
     printf("INFO VOLUME\n");
     printf("Volume name: %s\n", ext2.volumeName);
-    printf("Last Checked: %s", lastCheckStr);
-    printf("Last Mounted: %s", lastMountStr);
-    printf("Last Written: %s", lastWriteStr);
+    printf("Last Checked: %s\n", lastCheckStr);
+    printf("Last Mounted: %s\n", lastMountStr);
+    printf("Last Written: %s\n", lastWriteStr);
 }
 
 void ext2_info (FILE *fp) {
     EXT2 ext2;
+    char lastMountStr[32];
+    char lastWriteStr[32];
+    char lastCheckStr[32];
 
     // Número de inodos
     fseek(fp, 1024 + 0, SEEK_SET);
@@ -98,14 +113,9 @@ void ext2_info (FILE *fp) {
     // calcular block size real
     unsigned int blockSize = 1024 << ext2.logBlockSize;
 
-    // convertir fechas
-    time_t mountTime = (time_t) ext2.lastMount;
-    time_t writeTime = (time_t) ext2.lastWrite;
-    time_t checkTime = (time_t) ext2.lastCheck;
-
-    char *lastMountStr = ctime(&mountTime);
-    char *lastWriteStr = ctime(&writeTime);
-    char *lastCheckStr = ctime(&checkTime);
+    format_timestamp(ext2.lastMount, lastMountStr, sizeof(lastMountStr));
+    format_timestamp(ext2.lastWrite, lastWriteStr, sizeof(lastWriteStr));
+    format_timestamp(ext2.lastCheck, lastCheckStr, sizeof(lastCheckStr));
 
     showInfoEXT2(ext2, blockSize, lastMountStr, lastWriteStr, lastCheckStr);
 }

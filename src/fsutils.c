@@ -74,7 +74,7 @@ int main (int argc, char *argv[]) {
 
     int option = checkParams(argc, argv);
 
-    if (option) {
+    if (option == 1) {
         return 1;
     }
 

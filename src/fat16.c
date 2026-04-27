@@ -1,9 +1,187 @@
 #include "fat16.h"
+#include <stdio.h>
+
+unsigned short next_cluster(FILE *fp, FAT16Tree fat16, unsigned short cluster) {
+    unsigned short next;
+
+    fseek(fp, fat16.fatStart + cluster * 2, SEEK_SET);
+    fread(&next, sizeof(unsigned short), 1, fp);
+
+    return next;
+}
+
+void build_name(const unsigned char entry[32], char *name) {
+    int i;
+    int pos = 0;
+
+    for (i = 0; i < 8 && entry[i] != ' '; i++) {
+        name[pos++] = (char) entry[i];
+    }
+
+    if (entry[8] != ' ') {
+        name[pos++] = '.';
+
+        for (i = 8; i < 11 && entry[i] != ' '; i++) {
+            name[pos++] = (char) entry[i];
+        }
+    }
+
+    name[pos] = '\0';
+}
+
+void append_child(Node *parent, Node *child) {
+    Node *current;
+
+    if (parent->child == NULL) {
+        parent->child = child;
+        return;
+    }
+
+    current = parent->child;
+
+    while (current->next != NULL) {
+        current = current->next;
+    }
+
+    current->next = child;
+}
+
+void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short cluster) {
+    unsigned char entry[32];
+    int i;
+    int entries;
+    long offset;
+
+    if (cluster == 0) {
+        entries = fat16.maxRootEntries;
+
+        for (i = 0; i < entries; i++) {
+            offset = fat16.rootStart + i * 32;
+            fseek(fp, offset, SEEK_SET);
+            fread(entry, sizeof(unsigned char), 32, fp);
+
+            if (entry[0] == 0x00) {
+                break;
+            }
+
+            if (entry[0] == 0xE5 || entry[11] == 0x0F || (entry[11] & 0x08)) {
+                continue;
+            }
+
+            Node *child = malloc(sizeof(Node));
+            unsigned short firstCluster;
+
+            if (child == NULL) {
+                return;
+            }
+
+            build_name(entry, child->name);
+
+            if (strcmp(child->name, ".") == 0 || strcmp(child->name, "..") == 0) {
+                free(child);
+                continue;
+            }
+
+            child->isDirectory = (entry[11] & 0x10) != 0;
+            child->child = NULL;
+            child->next = NULL;
+
+            append_child(parent, child);
+
+            firstCluster = (unsigned short) (entry[26] | (entry[27] << 8));
+
+            if (child->isDirectory && firstCluster >= 2) {
+                readDirectory(fp, fat16, child, firstCluster);
+            }
+        }
+
+        return;
+    }
+
+    while (cluster < 0xFFF8) {
+        entries = fat16.clusterSize / 32;
+        offset = fat16.dataStart + (long) (cluster - 2) * fat16.clusterSize;
+
+        for (i = 0; i < entries; i++) {
+            fseek(fp, offset + i * 32, SEEK_SET);
+            fread(entry, sizeof(unsigned char), 32, fp);
+
+            if (entry[0] == 0x00) {
+                return;
+            }
+
+            if (entry[0] == 0xE5 || entry[11] == 0x0F || (entry[11] & 0x08)) {
+                continue;
+            }
+
+            Node *child = malloc(sizeof(Node));
+            unsigned short firstCluster;
+
+            if (child == NULL) {
+                return;
+            }
+
+            build_name(entry, child->name);
+
+            if (strcmp(child->name, ".") == 0 || strcmp(child->name, "..") == 0) {
+                free(child);
+                continue;
+            }
+
+            child->isDirectory = (entry[11] & 0x10) != 0;
+            child->child = NULL;
+            child->next = NULL;
+
+            append_child(parent, child);
+
+            firstCluster = (unsigned short) (entry[26] | (entry[27] << 8));
+
+            if (child->isDirectory && firstCluster >= 2) {
+                readDirectory(fp, fat16, child, firstCluster);
+            }
+        }
+
+        cluster = next_cluster(fp, fat16, cluster);
+    }
+}
+
+static void printTree(Node *node, const char *prefix, int isLast) {
+    char nextPrefix[256];
+
+    if (node == NULL) {
+        return;
+    }
+
+    printf("%s", prefix);
+    printf("%s", isLast ? "└── " : "├── ");
+    printf("%s\n", node->name);
+
+    snprintf(nextPrefix, sizeof(nextPrefix), "%s%s", prefix, isLast ? "    " : "│   ");
+
+    if (node->child != NULL) {
+        Node *child = node->child;
+
+        while (child != NULL) {
+            printTree(child, nextPrefix, child->next == NULL);
+            child = child->next;
+        }
+    }
+}
+
+static void freeTree(Node *node) {
+    if (node == NULL) {
+        return;
+    }
+
+    freeTree(node->child);
+    freeTree(node->next);
+    free(node);
+}
 
 /*
  * Show the information of an FAT16 file system
  */
-void showInfoFAT16 (FAT16 fat16) {
+void showInfoFAT16 (FAT16Info fat16) {
     printf("------ Filesystem Information ------\n\n");
     printf("Filesystem: FAT16\n\n");
 
@@ -21,7 +199,7 @@ void showInfoFAT16 (FAT16 fat16) {
  * Get and find information about an FAT16 filesystem
  */
 void fat16_info (FILE *fp) {
-    FAT16 fat16;
+    FAT16Info fat16;
 
     //System name
     fseek(fp, 3, SEEK_SET);
@@ -65,5 +243,55 @@ void fat16_info (FILE *fp) {
  */
 
 void fat16_tree(FILE *fp) {
+    FAT16Tree fat16;
 
+    // Sector size
+    fseek(fp, 11, SEEK_SET);
+    fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp);
+
+    fseek(fp, 13, SEEK_SET);
+    fread(&fat16.sectorsPerCluster, sizeof(unsigned char), 1, fp);
+
+    fseek(fp, 14, SEEK_SET);
+    fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp);
+
+    fseek(fp, 16, SEEK_SET);
+    fread(&fat16.numFATs, sizeof(unsigned char), 1, fp);
+
+    fseek(fp, 17, SEEK_SET);
+    fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp);
+
+    fseek(fp, 22, SEEK_SET);
+    fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp);
+
+    fat16.rootDirSectors = (fat16.maxRootEntries * 32 + fat16.sectorSize - 1) / fat16.sectorSize;
+    fat16.clusterSize = fat16.sectorSize * fat16.sectorsPerCluster;
+    fat16.fatStart = fat16.reservedSectors * fat16.sectorSize;
+    fat16.rootStart = (fat16.reservedSectors + fat16.numFATs * fat16.sectorsPerFAT) * fat16.sectorSize;
+    fat16.dataStart = fat16.rootStart + fat16.rootDirSectors * fat16.sectorSize;
+
+    Node *root = malloc(sizeof(Node));
+    if (root == NULL) {
+        return;
+    }
+
+    strcpy(root->name, ".");
+    root->isDirectory = 1;
+    root->child = NULL;
+    root->next = NULL;
+
+    readDirectory(fp, fat16, root, 0);
+
+    printf("%s\n", root->name);
+
+    if (root->child != NULL) {
+        Node *child = root->child;
+
+        while (child != NULL) {
+            printTree(child, "", child->next == NULL);
+            child = child->next;
+        }
+    }
+
+    freeTree(root);
 }

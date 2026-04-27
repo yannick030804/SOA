@@ -18,7 +18,7 @@ static void format_timestamp(unsigned int rawTime, char *buffer, size_t bufferSi
 /*
  * Display and show detailed information about an EXT2 filesystem
  */
-void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, const char *lastMountStr, const char *lastWriteStr, const char *lastCheckStr) {
+void showInfoEXT2 (EXT2Info ext2, unsigned int blockSize, const char *lastMountStr, const char *lastWriteStr, const char *lastCheckStr) {
     printf("------ Filesystem Information ------\n\n");
     printf("Filesystem: EXT2\n\n");
 
@@ -49,7 +49,7 @@ void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, const char *lastMountStr, 
  * Get and find information about an EXT2 filesystem
  */
 void ext2_info (FILE *fp) {
-    EXT2 ext2;
+    EXT2Info ext2;
     char lastMountStr[32];
     char lastWriteStr[32];
     char lastCheckStr[32];
@@ -134,5 +134,5 @@ void ext2_info (FILE *fp) {
  */
 
 void ext2_tree(FILE *fp) {
-
+    (void) fp;
 }

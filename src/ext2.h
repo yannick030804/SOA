@@ -2,8 +2,12 @@
 #define EXT2_H
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
+/*
+ * Structure representing the information of an EXT2 file system
+ */
 typedef struct {
     unsigned int numInodes;
     unsigned int numBlocks;
@@ -21,8 +25,11 @@ typedef struct {
     unsigned int firstInode;
     unsigned short inodeSize;
     char volumeName[17];
-} EXT2;
+} EXT2Info;
 
+/*
+ * EXT2 file system functions
+ */
 void ext2_info (FILE *fp);
 void ext2_tree (FILE *fp);
 

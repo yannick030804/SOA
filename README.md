@@ -26,34 +26,38 @@ Estado actual:
 
 ## Compilacion
 
-Desde la raiz del proyecto:
+La forma mas simple es compilar desde la raiz del proyecto con:
+
+```bash
+make
+```
+
+Esto genera el ejecutable `fsutils`.
+
+Si quieres compilar manualmente, usa:
 
 ```bash
 cc -Wall -Wextra src/fsutils.c src/ext2.c src/fat16.c -o fsutils
 ```
 
-Si quieres trabajar exactamente como en la practica, tambien puedes dejar el ejecutable dentro de `src`:
-
-```bash
-cc -Wall -Wextra src/fsutils.c src/ext2.c src/fat16.c -o src/fsutils
-```
-
 ## Ejecucion
 
-La forma recomendada para ejecutar el programa es entrar en `src` y lanzarlo desde ahi:
-
-```bash
-cd src
-./fsutils --info <imagen>
-./fsutils --tree <imagen>
-```
-
-Si compilas el binario en la raiz, tambien puedes ejecutarlo desde la raiz:
+La forma recomendada para ejecutar el programa es desde la raiz:
 
 ```bash
 ./fsutils --info <imagen>
 ./fsutils --tree <imagen>
 ```
+
+Tambien puede ejecutarse desde `src` si el binario esta ahi.
+
+El programa busca las imagenes automaticamente en:
+- `data/ext2`
+- `data/fat16`
+- `../data/ext2`
+- `../data/fat16`
+
+Por eso funciona tanto desde la raiz como desde `src`.
 
 Uso general:
 
@@ -62,34 +66,23 @@ Uso general:
 ./fsutils --tree <imagen>
 ```
 
-El programa busca las imagenes automaticamente en:
-- `data/ext2`
-- `data/fat16`
-- `../data/ext2`
-- `../data/fat16`
-
-Esto permite ejecutarlo tanto desde la raiz del proyecto como desde `src`.
-
 ## Ejemplos
 
 Mostrar informacion de una imagen `EXT2`:
 
 ```bash
-cd src
 ./fsutils --info studentext100MB
 ```
 
 Mostrar informacion de una imagen `FAT16`:
 
 ```bash
-cd src
 ./fsutils --info studentfat100MB
 ```
 
 Mostrar el arbol de directorios de una imagen `FAT16`:
 
 ```bash
-cd src
 ./fsutils --tree studentfat100MB
 ```
 

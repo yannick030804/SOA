@@ -3,7 +3,7 @@
 /*
  * Format a raw timestamp into a human-readable string
  */
-static void format_timestamp(unsigned int rawTime, char *buffer, size_t bufferSize) {
+void format_timestamp(unsigned int rawTime, char *buffer, size_t bufferSize) {
     time_t timestamp = (time_t) rawTime;
     struct tm *timeInfo = localtime(&timestamp);
 
@@ -55,68 +55,101 @@ void ext2_info (FILE *fp) {
     char lastCheckStr[32];
 
     // Número de inodos
-    fseek(fp, 1024 + 0, SEEK_SET);
-    fread(&ext2.numInodes, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 0, SEEK_SET) != 0) || (fread(&ext2.numInodes, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Número de bloques
-    fseek(fp, 1024 + 4, SEEK_SET);
-    fread(&ext2.numBlocks, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 4, SEEK_SET) != 0) || (fread(&ext2.numBlocks, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Bloques reservados
-    fseek(fp, 1024 + 8, SEEK_SET);
-    fread(&ext2.reservedBlocks, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 8, SEEK_SET) != 0) || (fread(&ext2.reservedBlocks, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Bloques libres
-    fseek(fp, 1024 + 12, SEEK_SET);
-    fread(&ext2.freeBlocks, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 12, SEEK_SET) != 0) || (fread(&ext2.freeBlocks, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Inodos libres
-    fseek(fp, 1024 + 16, SEEK_SET);
-    fread(&ext2.freeInodes, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 16, SEEK_SET) != 0) || (fread(&ext2.freeInodes, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Primer bloque
-    fseek(fp, 1024 + 20, SEEK_SET);
-    fread(&ext2.firstBlock, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 20, SEEK_SET) != 0) || (fread(&ext2.firstBlock, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // log block size
-    fseek(fp, 1024 + 24, SEEK_SET);
-    fread(&ext2.logBlockSize, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 24, SEEK_SET) != 0) || (fread(&ext2.logBlockSize, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // bloques por grupo
-    fseek(fp, 1024 + 32, SEEK_SET);
-    fread(&ext2.blocksPerGroup, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 32, SEEK_SET) != 0) || (fread(&ext2.blocksPerGroup, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // fragmentos por grupo
-    fseek(fp, 1024 + 36, SEEK_SET);
-    fread(&ext2.fragsPerGroup, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 36, SEEK_SET) != 0) || (fread(&ext2.fragsPerGroup, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // inodos por grupo
-    fseek(fp, 1024 + 40, SEEK_SET);
-    fread(&ext2.inodesPerGroup, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 40, SEEK_SET) != 0) || (fread(&ext2.inodesPerGroup, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // última montura
-    fseek(fp, 1024 + 44, SEEK_SET);
-    fread(&ext2.lastMount, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 44, SEEK_SET) != 0) || (fread(&ext2.lastMount, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // última escritura
-    fseek(fp, 1024 + 48, SEEK_SET);
-    fread(&ext2.lastWrite, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 48, SEEK_SET) != 0) || (fread(&ext2.lastWrite, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // última comprobación
-    fseek(fp, 1024 + 64, SEEK_SET);
-    fread(&ext2.lastCheck, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 64, SEEK_SET) != 0) || (fread(&ext2.lastCheck, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // primer inode
-    fseek(fp, 1024 + 84, SEEK_SET);
-    fread(&ext2.firstInode, sizeof(unsigned int), 1, fp);
+    if((fseek(fp, 1024 + 84, SEEK_SET) != 0) || (fread(&ext2.firstInode, sizeof(unsigned int), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // tamaño inode
-    fseek(fp, 1024 + 88, SEEK_SET);
-    fread(&ext2.inodeSize, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 1024 + 88, SEEK_SET) != 0) || (fread(&ext2.inodeSize, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // nombre volumen
-    fseek(fp, 1024 + 120, SEEK_SET);
-    fread(ext2.volumeName, sizeof(char), 16, fp);
+    if((fseek(fp, 1024 + 120, SEEK_SET) != 0) || (fread(ext2.volumeName, sizeof(char), 16, fp) != 16)) {
+        printf("Error reading file\n");
+        return;
+    }
+
     ext2.volumeName[16] = '\0';
 
     // calcular block size real

@@ -4,8 +4,10 @@
 unsigned short next_cluster(FILE *fp, FAT16Tree fat16, unsigned short cluster) {
     unsigned short next;
 
-    fseek(fp, fat16.fatStart + cluster * 2, SEEK_SET);
-    fread(&next, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, fat16.fatStart + cluster * 2, SEEK_SET) != 0) || (fread(&next, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return 0xFFFF;
+    }
 
     return next;
 }
@@ -57,8 +59,10 @@ void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short clust
 
         for (i = 0; i < entries; i++) {
             offset = fat16.rootStart + i * 32;
-            fseek(fp, offset, SEEK_SET);
-            fread(entry, sizeof(unsigned char), 32, fp);
+            if((fseek(fp, offset, SEEK_SET) != 0) || (fread(entry, sizeof(unsigned char), 32, fp) != 32)) {
+                printf("Error reading file\n");
+                return;
+            }
 
             if (entry[0] == 0x00) {
                 break;
@@ -103,8 +107,10 @@ void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short clust
         offset = fat16.dataStart + (long) (cluster - 2) * fat16.clusterSize;
 
         for (i = 0; i < entries; i++) {
-            fseek(fp, offset + i * 32, SEEK_SET);
-            fread(entry, sizeof(unsigned char), 32, fp);
+            if((fseek(fp, offset + i * 32, SEEK_SET) != 0) || (fread(entry, sizeof(unsigned char), 32, fp) != 32)) {
+                printf("Error reading file\n");
+                return;
+            }
 
             if (entry[0] == 0x00) {
                 return;
@@ -202,37 +208,53 @@ void fat16_info (FILE *fp) {
     FAT16Info fat16;
 
     //System name
-    fseek(fp, 3, SEEK_SET);
-    fread(fat16.systemName, sizeof(char), 8, fp);
+    if((fseek(fp, 3, SEEK_SET) != 0) || (fread(fat16.systemName, sizeof(char), 8, fp) != 8)) {
+        printf("Error reading file\n");
+        return;
+    }
     fat16.systemName[8] = '\0';
 
     //Sector size
-    fseek(fp, 11, SEEK_SET);
-    fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 11, SEEK_SET) != 0) || (fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Sectors per cluster
-    fseek(fp, 13, SEEK_SET);
-    fread(&fat16.sectorsPerCluster, sizeof(unsigned char), 1, fp);
+    if((fseek(fp, 13, SEEK_SET) != 0) || (fread(&fat16.sectorsPerCluster, sizeof(unsigned char), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Reserved sectors
-    fseek(fp, 14, SEEK_SET);
-    fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 14, SEEK_SET) != 0) || (fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Number of FATs
-    fseek(fp, 16, SEEK_SET);
-    fread(&fat16.numFATs, sizeof(unsigned char), 1, fp);
+    if((fseek(fp, 16, SEEK_SET) != 0) || (fread(&fat16.numFATs, sizeof(unsigned char), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Max root entries
-    fseek(fp, 17, SEEK_SET);
-    fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 17, SEEK_SET) != 0) || (fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Sectors per FAT
-    fseek(fp, 22, SEEK_SET);
-    fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 22, SEEK_SET) != 0) || (fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     // Label
-    fseek(fp, 43, SEEK_SET);
-    fread(fat16.label, sizeof(char), 11, fp);
+    if((fseek(fp, 43, SEEK_SET) != 0) || (fread(fat16.label, sizeof(char), 11, fp) != 11)) {
+        printf("Error reading file\n");
+        return;
+    }
     fat16.label[11] = '\0';
 
     showInfoFAT16(fat16);
@@ -246,23 +268,40 @@ void fat16_tree(FILE *fp) {
     FAT16Tree fat16;
 
     // Sector size
-    fseek(fp, 11, SEEK_SET);
-    fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 11, SEEK_SET) != 0) || (fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
-    fseek(fp, 13, SEEK_SET);
-    fread(&fat16.sectorsPerCluster, sizeof(unsigned char), 1, fp);
+    // Sectors per Cluster
+    if((fseek(fp, 13, SEEK_SET) != 0) || (fread(&fat16.sectorsPerCluster, sizeof(unsigned char), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
-    fseek(fp, 14, SEEK_SET);
-    fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp);
+    // Reserved Sectors
+    if((fseek(fp, 14, SEEK_SET) != 0) || (fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
-    fseek(fp, 16, SEEK_SET);
-    fread(&fat16.numFATs, sizeof(unsigned char), 1, fp);
+    // Number of FATs
+    if((fseek(fp, 16, SEEK_SET) != 0) || (fread(&fat16.numFATs, sizeof(unsigned char), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
-    fseek(fp, 17, SEEK_SET);
-    fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp);
+    // Max root Entries
+    if((fseek(fp, 17, SEEK_SET) != 0) || (fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
-    fseek(fp, 22, SEEK_SET);
-    fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp);
+    // Sectors per FAT
+    if((fseek(fp, 22, SEEK_SET) != 0) || (fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return;
+    }
 
     fat16.rootDirSectors = (fat16.maxRootEntries * 32 + fat16.sectorSize - 1) / fat16.sectorSize;
     fat16.clusterSize = fat16.sectorSize * fat16.sectorsPerCluster;

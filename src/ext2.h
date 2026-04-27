@@ -24,5 +24,6 @@ typedef struct {
 } EXT2;
 
 void ext2_info (FILE *fp);
+void ext2_tree (FILE *fp);
 
 #endif

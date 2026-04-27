@@ -15,5 +15,6 @@ typedef struct {
 } FAT16;
 
 void fat16_info (FILE *fp);
+void fat16_tree (FILE *fp);
 
 #endif

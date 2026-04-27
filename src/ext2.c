@@ -1,5 +1,8 @@
 #include "ext2.h"
 
+/*
+ * Format a raw timestamp into a human-readable string
+ */
 static void format_timestamp(unsigned int rawTime, char *buffer, size_t bufferSize) {
     time_t timestamp = (time_t) rawTime;
     struct tm *timeInfo = localtime(&timestamp);
@@ -12,6 +15,9 @@ static void format_timestamp(unsigned int rawTime, char *buffer, size_t bufferSi
     buffer[bufferSize - 1] = '\0';
 }
 
+/*
+ * Display and show detailed information about an EXT2 filesystem
+ */
 void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, const char *lastMountStr, const char *lastWriteStr, const char *lastCheckStr) {
     printf("------ Filesystem Information ------\n\n");
     printf("Filesystem: EXT2\n\n");
@@ -39,6 +45,9 @@ void showInfoEXT2 (EXT2 ext2, unsigned int blockSize, const char *lastMountStr, 
     printf("Last Written: %s\n", lastWriteStr);
 }
 
+/*
+ * Get and find information about an EXT2 filesystem
+ */
 void ext2_info (FILE *fp) {
     EXT2 ext2;
     char lastMountStr[32];
@@ -118,4 +127,12 @@ void ext2_info (FILE *fp) {
     format_timestamp(ext2.lastCheck, lastCheckStr, sizeof(lastCheckStr));
 
     showInfoEXT2(ext2, blockSize, lastMountStr, lastWriteStr, lastCheckStr);
+}
+
+/*
+ * Show the directory tree of an EXT2 file system
+ */
+
+void ext2_tree(FILE *fp) {
+
 }

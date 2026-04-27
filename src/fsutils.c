@@ -6,17 +6,22 @@
 int checkParams (int argc, char *argv[]) {
 
     if (argc != 3) {
+        printf("Error: Try one of the following options:\n");
         printf("Use: ./fsutils --info <filename>\n");
+        printf("Use: ./fsutils --tree <filename>\n");
         return 1;
     }
 
-    if (strcmp(argv[1], "--info") != 0) {
-        printf("Error: Invalid option.\n");
+    if (strcmp(argv[1], "--info") == 0) {
+        return 0;
+    } else if (strcmp(argv[1], "--tree") == 0) {
+        return 2;
+    } else {
+        printf("Error: Try one of the following options:\n");
         printf("Use: ./fsutils --info <filename>\n");
+        printf("Use: ./fsutils --tree <filename>\n");
         return 1;
     }
-
-    return 0;
 }
 
 FILE *openFile (char *filename) {
@@ -67,21 +72,31 @@ int isFAT16 (FILE *fp) {
 
 int main (int argc, char *argv[]) {
 
-    if (checkParams(argc, argv)) {
+    int option = checkParams(argc, argv);
+
+    if (option) {
         return 1;
     }
 
     FILE *fp = openFile(argv[2]);
-    
+
     if (fp == NULL) {
         printf("Error: cannot open file %s\n", argv[2]);
         return 1;
     }
 
     if (isEXT2(fp)) {
-        ext2_info(fp);
+        if (option == 0) {
+            ext2_info(fp);
+        } else if (option == 2) {
+            ext2_tree(fp);
+        }
     } else if (isFAT16(fp)) {
-        fat16_info(fp);
+        if (option == 0) {
+            fat16_info(fp);
+        } else if (option == 2) {
+            fat16_tree(fp);
+        }
     } else {
         printf("Error: unknown filesystem.\n");
     }

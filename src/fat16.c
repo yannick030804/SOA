@@ -1,5 +1,8 @@
 #include "fat16.h"
 
+/*
+ * Show the information of an FAT16 file system
+ */
 void showInfoFAT16 (FAT16 fat16) {
     printf("------ Filesystem Information ------\n\n");
     printf("Filesystem: FAT16\n\n");
@@ -14,6 +17,9 @@ void showInfoFAT16 (FAT16 fat16) {
     printf("Label: %s\n", fat16.label);
 }
 
+/*
+ * Get and find information about an FAT16 filesystem
+ */
 void fat16_info (FILE *fp) {
     FAT16 fat16;
 
@@ -52,4 +58,12 @@ void fat16_info (FILE *fp) {
     fat16.label[11] = '\0';
 
     showInfoFAT16(fat16);
+}
+
+/*
+ * Show the directory tree of an FAT16 file system
+ */
+
+void fat16_tree(FILE *fp) {
+
 }

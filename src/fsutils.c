@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include "ext2.h"
 #include "fat16.h"
@@ -48,10 +49,14 @@ FILE *openFile (char *filename) {
 }
 
 int isEXT2 (FILE *fp) {
-    unsigned short firm;
+    unsigned char bytes[2];
+    uint16_t firm;
 
-    fseek(fp, 1080, SEEK_SET);
-    fread(&firm, sizeof(unsigned short), 1, fp);
+    if((fseek(fp, 1080, SEEK_SET) != 0) || (fread(bytes, sizeof(unsigned char), 2, fp) != 2)) {
+        return 0;
+    }
+
+    firm = (uint16_t) bytes[0] | ((uint16_t) bytes[1] << 8);
 
     return (firm == 0xEF53);
 }

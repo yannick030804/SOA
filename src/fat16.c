@@ -1,11 +1,32 @@
 #include "fat16.h"
+#include <stdint.h>
 #include <stdio.h>
 
-unsigned short next_cluster(FILE *fp, FAT16Tree fat16, unsigned short cluster) {
-    unsigned short next;
+static int readTwoBytes(FILE *fp, long offset, uint16_t *value) {
+    unsigned char bytes[2];
 
-    if((fseek(fp, fat16.fatStart + cluster * 2, SEEK_SET) != 0) || (fread(&next, sizeof(unsigned short), 1, fp) != 1)) {
+    if ((fseek(fp, offset, SEEK_SET) != 0) || (fread(bytes, sizeof(unsigned char), 2, fp) != 2)) {
         printf("Error reading file\n");
+        return 0;
+    }
+
+    *value = (uint16_t) bytes[0] | ((uint16_t) bytes[1] << 8);
+    return 1;
+}
+
+static void trim_trailing_spaces(char *text) {
+    size_t len = strlen(text);
+
+    while (len > 0 && text[len - 1] == ' ') {
+        text[len - 1] = '\0';
+        len--;
+    }
+}
+
+uint16_t next_cluster(FILE *fp, FAT16Tree fat16, uint16_t cluster) {
+    uint16_t next;
+
+    if(!readTwoBytes(fp, fat16.fatStart + cluster * 2, &next)) {
         return 0xFFFF;
     }
 
@@ -48,7 +69,7 @@ void append_child(Node *parent, Node *child) {
     current->next = child;
 }
 
-void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short cluster) {
+void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, uint16_t cluster) {
     unsigned char entry[32];
     int i;
     int entries;
@@ -73,7 +94,7 @@ void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short clust
             }
 
             Node *child = malloc(sizeof(Node));
-            unsigned short firstCluster;
+            uint16_t firstCluster;
 
             if (child == NULL) {
                 return;
@@ -92,7 +113,7 @@ void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short clust
 
             append_child(parent, child);
 
-            firstCluster = (unsigned short) (entry[26] | (entry[27] << 8));
+            firstCluster = (uint16_t) entry[26] | ((uint16_t) entry[27] << 8);
 
             if (child->isDirectory && firstCluster >= 2) {
                 readDirectory(fp, fat16, child, firstCluster);
@@ -121,7 +142,7 @@ void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short clust
             }
 
             Node *child = malloc(sizeof(Node));
-            unsigned short firstCluster;
+            uint16_t firstCluster;
 
             if (child == NULL) {
                 return;
@@ -140,7 +161,7 @@ void readDirectory(FILE *fp, FAT16Tree fat16, Node *parent, unsigned short clust
 
             append_child(parent, child);
 
-            firstCluster = (unsigned short) (entry[26] | (entry[27] << 8));
+            firstCluster = (uint16_t) entry[26] | ((uint16_t) entry[27] << 8);
 
             if (child->isDirectory && firstCluster >= 2) {
                 readDirectory(fp, fat16, child, firstCluster);
@@ -215,8 +236,7 @@ void fat16_info (FILE *fp) {
     fat16.systemName[8] = '\0';
 
     //Sector size
-    if((fseek(fp, 11, SEEK_SET) != 0) || (fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 11, &fat16.sectorSize)) {
         return;
     }
 
@@ -227,8 +247,7 @@ void fat16_info (FILE *fp) {
     }
 
     // Reserved sectors
-    if((fseek(fp, 14, SEEK_SET) != 0) || (fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 14, &fat16.reservedSectors)) {
         return;
     }
 
@@ -239,14 +258,12 @@ void fat16_info (FILE *fp) {
     }
 
     // Max root entries
-    if((fseek(fp, 17, SEEK_SET) != 0) || (fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 17, &fat16.maxRootEntries)) {
         return;
     }
 
     // Sectors per FAT
-    if((fseek(fp, 22, SEEK_SET) != 0) || (fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 22, &fat16.sectorsPerFAT)) {
         return;
     }
 
@@ -256,6 +273,8 @@ void fat16_info (FILE *fp) {
         return;
     }
     fat16.label[11] = '\0';
+    trim_trailing_spaces(fat16.systemName);
+    trim_trailing_spaces(fat16.label);
 
     showInfoFAT16(fat16);
 }
@@ -268,8 +287,7 @@ void fat16_tree(FILE *fp) {
     FAT16Tree fat16;
 
     // Sector size
-    if((fseek(fp, 11, SEEK_SET) != 0) || (fread(&fat16.sectorSize, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 11, &fat16.sectorSize)) {
         return;
     }
 
@@ -280,8 +298,7 @@ void fat16_tree(FILE *fp) {
     }
 
     // Reserved Sectors
-    if((fseek(fp, 14, SEEK_SET) != 0) || (fread(&fat16.reservedSectors, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 14, &fat16.reservedSectors)) {
         return;
     }
 
@@ -292,14 +309,12 @@ void fat16_tree(FILE *fp) {
     }
 
     // Max root Entries
-    if((fseek(fp, 17, SEEK_SET) != 0) || (fread(&fat16.maxRootEntries, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 17, &fat16.maxRootEntries)) {
         return;
     }
 
     // Sectors per FAT
-    if((fseek(fp, 22, SEEK_SET) != 0) || (fread(&fat16.sectorsPerFAT, sizeof(unsigned short), 1, fp) != 1)) {
-        printf("Error reading file\n");
+    if(!readTwoBytes(fp, 22, &fat16.sectorsPerFAT)) {
         return;
     }
 

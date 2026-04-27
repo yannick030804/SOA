@@ -1,6 +1,7 @@
 #ifndef FAT16_H
 #define FAT16_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,12 +11,12 @@
  */
 typedef struct {
     char systemName[9];
-    unsigned short sectorSize;
-    unsigned char sectorsPerCluster;
-    unsigned short reservedSectors;
-    unsigned char numFATs;
-    unsigned short maxRootEntries;
-    unsigned short sectorsPerFAT;
+    uint16_t sectorSize;
+    uint8_t sectorsPerCluster;
+    uint16_t reservedSectors;
+    uint8_t numFATs;
+    uint16_t maxRootEntries;
+    uint16_t sectorsPerFAT;
     char label[12];
 } FAT16Info;
 
@@ -23,18 +24,18 @@ typedef struct {
  * Structure representing the tree structure of an FAT16 file system
  */
 typedef struct {
-    unsigned short sectorSize;
-    unsigned char sectorsPerCluster;
-    unsigned short reservedSectors;
-    unsigned char numFATs;
-    unsigned short maxRootEntries;
-    unsigned short sectorsPerFAT;
+    uint16_t sectorSize;
+    uint8_t sectorsPerCluster;
+    uint16_t reservedSectors;
+    uint8_t numFATs;
+    uint16_t maxRootEntries;
+    uint16_t sectorsPerFAT;
 
-    unsigned int rootDirSectors;
-    unsigned int fatStart;
-    unsigned int rootStart;
-    unsigned int dataStart;
-    unsigned int clusterSize;
+    uint32_t rootDirSectors;
+    uint32_t fatStart;
+    uint32_t rootStart;
+    uint32_t dataStart;
+    uint32_t clusterSize;
 } FAT16Tree;
 
 /*

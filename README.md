@@ -62,8 +62,8 @@ Por eso funciona tanto desde la raiz como desde `src`.
 Uso general:
 
 ```bash
-./fsutils --info <imagen>
-./fsutils --tree <imagen>
+./fsutils --info <fichero>
+./fsutils --tree <fichero>
 ```
 
 ## Ejemplos
@@ -71,18 +71,21 @@ Uso general:
 Mostrar informacion de una imagen `EXT2`:
 
 ```bash
+cd src
 ./fsutils --info studentext100MB
 ```
 
 Mostrar informacion de una imagen `FAT16`:
 
 ```bash
+cd src
 ./fsutils --info studentfat100MB
 ```
 
 Mostrar el arbol de directorios de una imagen `FAT16`:
 
 ```bash
+cd src
 ./fsutils --tree studentfat100MB
 ```
 

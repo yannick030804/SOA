@@ -29,6 +29,26 @@ typedef struct {
 } EXT2Info;
 
 /*
+ * Structure representing the tree information of an EXT2 file system
+ */
+typedef struct {
+    uint32_t blockSize;
+    uint32_t inodesPerGroup;
+    uint16_t inodeSize;
+    uint32_t groupDescriptorOffset;
+} EXT2Tree;
+
+/*
+ * Structure representing a node in the EXT2 tree
+ */
+typedef struct EXT2Node {
+    char name[256];
+    int isDirectory;
+    struct EXT2Node *child;
+    struct EXT2Node *next;
+} EXT2Node;
+
+/*
  * EXT2 file system functions
  */
 void ext2_info (FILE *fp);

@@ -1,6 +1,10 @@
 #include "fat16.h"
+#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
+
+static uint16_t next_cluster(FILE *fp, FAT16Tree fat16, uint16_t cluster);
+static void build_name(const unsigned char entry[32], char *name);
 
 static int readTwoBytes(FILE *fp, long offset, uint16_t *value) {
     unsigned char bytes[2];
@@ -20,6 +24,195 @@ static void trim_trailing_spaces(char *text) {
     while (len > 0 && text[len - 1] == ' ') {
         text[len - 1] = '\0';
         len--;
+    }
+}
+
+static int sameName(const char *left, const char *right) {
+    while (*left != '\0' && *right != '\0') {
+        if (tolower((unsigned char) *left) != tolower((unsigned char) *right)) {
+            return 0;
+        }
+
+        left++;
+        right++;
+    }
+
+    return *left == '\0' && *right == '\0';
+}
+
+static int loadFat16Tree(FILE *fp, FAT16Tree *fat16) {
+    if(!readTwoBytes(fp, 11, &fat16->sectorSize)) {
+        return 0;
+    }
+
+    if((fseek(fp, 13, SEEK_SET) != 0) || (fread(&fat16->sectorsPerCluster, sizeof(unsigned char), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return 0;
+    }
+
+    if(!readTwoBytes(fp, 14, &fat16->reservedSectors)) {
+        return 0;
+    }
+
+    if((fseek(fp, 16, SEEK_SET) != 0) || (fread(&fat16->numFATs, sizeof(unsigned char), 1, fp) != 1)) {
+        printf("Error reading file\n");
+        return 0;
+    }
+
+    if(!readTwoBytes(fp, 17, &fat16->maxRootEntries)) {
+        return 0;
+    }
+
+    if(!readTwoBytes(fp, 22, &fat16->sectorsPerFAT)) {
+        return 0;
+    }
+
+    fat16->rootDirSectors = (fat16->maxRootEntries * 32 + fat16->sectorSize - 1) / fat16->sectorSize;
+    fat16->clusterSize = fat16->sectorSize * fat16->sectorsPerCluster;
+    fat16->fatStart = fat16->reservedSectors * fat16->sectorSize;
+    fat16->rootStart = (fat16->reservedSectors + fat16->numFATs * fat16->sectorsPerFAT) * fat16->sectorSize;
+    fat16->dataStart = fat16->rootStart + fat16->rootDirSectors * fat16->sectorSize;
+
+    return 1;
+}
+
+static int findFileInDirectory(FILE *fp, FAT16Tree fat16, uint16_t cluster, const char *fileName, uint16_t *firstCluster, uint32_t *fileSize) {
+    unsigned char entry[32];
+    int i;
+    int entries;
+    long offset;
+
+    if (cluster == 0) {
+        entries = fat16.maxRootEntries;
+
+        for (i = 0; i < entries; i++) {
+            char name[13];
+            uint16_t entryCluster;
+
+            offset = fat16.rootStart + i * 32;
+            if((fseek(fp, offset, SEEK_SET) != 0) || (fread(entry, sizeof(unsigned char), 32, fp) != 32)) {
+                printf("Error reading file\n");
+                return 0;
+            }
+
+            if (entry[0] == 0x00) {
+                break;
+            }
+
+            if (entry[0] == 0xE5 || entry[11] == 0x0F || (entry[11] & 0x08)) {
+                continue;
+            }
+
+            build_name(entry, name);
+
+            if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+                continue;
+            }
+
+            entryCluster = (uint16_t) entry[26] | ((uint16_t) entry[27] << 8);
+
+            if ((entry[11] & 0x10) != 0) {
+                if (entryCluster >= 2 && findFileInDirectory(fp, fat16, entryCluster, fileName, firstCluster, fileSize)) {
+                    return 1;
+                }
+            } else if (sameName(name, fileName)) {
+                *firstCluster = entryCluster;
+                *fileSize = (uint32_t) entry[28] |
+                            ((uint32_t) entry[29] << 8) |
+                            ((uint32_t) entry[30] << 16) |
+                            ((uint32_t) entry[31] << 24);
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+
+    while (cluster < 0xFFF8) {
+        entries = fat16.clusterSize / 32;
+        offset = fat16.dataStart + (long) (cluster - 2) * fat16.clusterSize;
+
+        for (i = 0; i < entries; i++) {
+            char name[13];
+            uint16_t entryCluster;
+
+            if((fseek(fp, offset + i * 32, SEEK_SET) != 0) || (fread(entry, sizeof(unsigned char), 32, fp) != 32)) {
+                printf("Error reading file\n");
+                return 0;
+            }
+
+            if (entry[0] == 0x00) {
+                return 0;
+            }
+
+            if (entry[0] == 0xE5 || entry[11] == 0x0F || (entry[11] & 0x08)) {
+                continue;
+            }
+
+            build_name(entry, name);
+
+            if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+                continue;
+            }
+
+            entryCluster = (uint16_t) entry[26] | ((uint16_t) entry[27] << 8);
+
+            if ((entry[11] & 0x10) != 0) {
+                if (entryCluster >= 2 && findFileInDirectory(fp, fat16, entryCluster, fileName, firstCluster, fileSize)) {
+                    return 1;
+                }
+            } else if (sameName(name, fileName)) {
+                *firstCluster = entryCluster;
+                *fileSize = (uint32_t) entry[28] |
+                            ((uint32_t) entry[29] << 8) |
+                            ((uint32_t) entry[30] << 16) |
+                            ((uint32_t) entry[31] << 24);
+                return 1;
+            }
+        }
+
+        cluster = next_cluster(fp, fat16, cluster);
+    }
+
+    return 0;
+}
+
+static void printFileContent(FILE *fp, FAT16Tree fat16, uint16_t firstCluster, uint32_t fileSize) {
+    unsigned char buffer[4096];
+    uint32_t remaining = fileSize;
+    uint16_t cluster = firstCluster;
+
+    while (cluster >= 2 && cluster < 0xFFF8 && remaining > 0) {
+        uint32_t clusterRemaining = fat16.clusterSize;
+        long offset = fat16.dataStart + (long) (cluster - 2) * fat16.clusterSize;
+
+        if (remaining < clusterRemaining) {
+            clusterRemaining = remaining;
+        }
+
+        while (clusterRemaining > 0) {
+            uint32_t chunk = sizeof(buffer);
+
+            if (clusterRemaining < chunk) {
+                chunk = clusterRemaining;
+            }
+
+            if((fseek(fp, offset, SEEK_SET) != 0) || (fread(buffer, sizeof(unsigned char), chunk, fp) != chunk)) {
+                printf("Error reading file\n");
+                return;
+            }
+
+            fwrite(buffer, sizeof(unsigned char), chunk, stdout);
+            offset += chunk;
+            clusterRemaining -= chunk;
+            remaining -= chunk;
+        }
+
+        if (remaining == 0) {
+            break;
+        }
+
+        cluster = next_cluster(fp, fat16, cluster);
     }
 }
 
@@ -286,43 +479,9 @@ void fat16_info (FILE *fp) {
 void fat16_tree(FILE *fp) {
     FAT16Tree fat16;
 
-    // Sector size
-    if(!readTwoBytes(fp, 11, &fat16.sectorSize)) {
+    if(!loadFat16Tree(fp, &fat16)) {
         return;
     }
-
-    // Sectors per Cluster
-    if((fseek(fp, 13, SEEK_SET) != 0) || (fread(&fat16.sectorsPerCluster, sizeof(unsigned char), 1, fp) != 1)) {
-        printf("Error reading file\n");
-        return;
-    }
-
-    // Reserved Sectors
-    if(!readTwoBytes(fp, 14, &fat16.reservedSectors)) {
-        return;
-    }
-
-    // Number of FATs
-    if((fseek(fp, 16, SEEK_SET) != 0) || (fread(&fat16.numFATs, sizeof(unsigned char), 1, fp) != 1)) {
-        printf("Error reading file\n");
-        return;
-    }
-
-    // Max root Entries
-    if(!readTwoBytes(fp, 17, &fat16.maxRootEntries)) {
-        return;
-    }
-
-    // Sectors per FAT
-    if(!readTwoBytes(fp, 22, &fat16.sectorsPerFAT)) {
-        return;
-    }
-
-    fat16.rootDirSectors = (fat16.maxRootEntries * 32 + fat16.sectorSize - 1) / fat16.sectorSize;
-    fat16.clusterSize = fat16.sectorSize * fat16.sectorsPerCluster;
-    fat16.fatStart = fat16.reservedSectors * fat16.sectorSize;
-    fat16.rootStart = (fat16.reservedSectors + fat16.numFATs * fat16.sectorsPerFAT) * fat16.sectorSize;
-    fat16.dataStart = fat16.rootStart + fat16.rootDirSectors * fat16.sectorSize;
 
     Node *root = malloc(sizeof(Node));
     if (root == NULL) {
@@ -348,4 +507,25 @@ void fat16_tree(FILE *fp) {
     }
 
     freeTree(root);
+}
+
+/*
+ * Show the directory tree of an FAT16 file system
+ */
+
+void fat16_cat(FILE* fp, char* file) {
+    FAT16Tree fat16;
+    uint16_t firstCluster;
+    uint32_t fileSize;
+
+    if(!loadFat16Tree(fp, &fat16)) {
+        return;
+    }
+
+    if(!findFileInDirectory(fp, fat16, 0, file, &firstCluster, &fileSize)) {
+        printf("Error: file %s not found\n", file);
+        return;
+    }
+
+    printFileContent(fp, fat16, firstCluster, fileSize);
 }

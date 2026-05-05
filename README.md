@@ -5,16 +5,19 @@ Proyecto en C para inspeccionar imagenes de sistemas de ficheros `EXT2` y `FAT16
 El programa detecta automaticamente el tipo de sistema de ficheros a partir del fichero y ejecuta la operacion pedida:
 - `--info`: muestra informacion general del sistema de ficheros.
 - `--tree`: muestra el arbol de directorios.
+- `--cat`: muestra el contenido de un fichero dentro de una imagen `FAT16`.
 
 ## Que hace el proyecto
 
 Actualmente el proyecto soporta:
 - `EXT2 --info`
+- `EXT2 --tree`
 - `FAT16 --info`
 - `FAT16 --tree`
+- `FAT16 --cat`
 
 Estado actual:
-- `EXT2 --tree` esta declarado en el codigo, pero todavia no esta implementado.
+- `EXT2 --cat` no esta implementado.
 
 ## Estructura
 
@@ -47,6 +50,7 @@ La forma recomendada para ejecutar el programa es desde la raiz:
 ```bash
 ./fsutils --info <imagen>
 ./fsutils --tree <imagen>
+./fsutils --cat <imagen> <fichero>
 ```
 
 Tambien puede ejecutarse desde `src` si el binario esta ahi.
@@ -64,6 +68,7 @@ Uso general:
 ```bash
 ./fsutils --info <fichero>
 ./fsutils --tree <fichero>
+./fsutils --cat <fichero> <archivo>
 ```
 
 ## Ejemplos
@@ -87,6 +92,13 @@ Mostrar el arbol de directorios de una imagen `FAT16`:
 ```bash
 cd src
 ./fsutils --tree studentfat100MB
+```
+
+Mostrar el contenido de un fichero dentro de una imagen `FAT16`:
+
+```bash
+cd src
+./fsutils --cat studentfat100MB practica.c
 ```
 
 ## Como funciona
@@ -119,9 +131,17 @@ Durante el recorrido:
 - se ignoran `.` y `..`
 - se enlazan hijos y hermanos para representar la jerarquia de carpetas y ficheros
 
+### `--cat` en `FAT16`
+
+La opcion `--cat` en `FAT16`:
+- busca el fichero dentro del sistema de ficheros
+- localiza su primer cluster y su tamano
+- sigue la cadena de clusters en la FAT
+- imprime el contenido del fichero por pantalla
+
 ## Limitaciones actuales
 
-- `EXT2 --tree` no esta implementado todavia.
+- `EXT2 --cat` no esta implementado.
 - El arbol `FAT16` muestra nombres cortos en formato 8.3.
 - El programa asume imagenes validas y no implementa manejo exhaustivo de errores de lectura.
 

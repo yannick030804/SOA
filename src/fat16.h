@@ -53,5 +53,6 @@ typedef struct Node {
  */
 void fat16_info (FILE *fp);
 void fat16_tree (FILE *fp);
+void fat16_cat(FILE* fp, char* file);
 
 #endif

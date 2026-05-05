@@ -6,10 +6,15 @@
 
 int checkParams (int argc, char *argv[]) {
 
+    if (argc == 4 && strcmp(argv[1], "--cat") == 0) {
+        return 3;
+    }
+
     if (argc != 3) {
         printf("Error: Try one of the following options:\n");
         printf("Use: ./fsutils --info <filename>\n");
         printf("Use: ./fsutils --tree <filename>\n");
+        printf("Use: ./fsutils --cat <filename> <file>\n");
         return 1;
     }
 
@@ -21,6 +26,7 @@ int checkParams (int argc, char *argv[]) {
         printf("Error: Try one of the following options:\n");
         printf("Use: ./fsutils --info <filename>\n");
         printf("Use: ./fsutils --tree <filename>\n");
+        printf("Use: ./fsutils --cat <filename> <file>\n");
         return 1;
     }
 }
@@ -95,12 +101,16 @@ int main (int argc, char *argv[]) {
             ext2_info(fp);
         } else if (option == 2) {
             ext2_tree(fp);
+        } else if (option == 3) {
+            printf("Error: --cat is only available for FAT16.\n");
         }
     } else if (isFAT16(fp)) {
         if (option == 0) {
             fat16_info(fp);
         } else if (option == 2) {
             fat16_tree(fp);
+        } else if (option == 3) {
+            fat16_cat(fp, argv[3]);
         }
     } else {
         printf("Error: unknown filesystem.\n");

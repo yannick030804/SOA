@@ -32,26 +32,7 @@ int checkParams (int argc, char *argv[]) {
 }
 
 FILE *openFile (char *filename) {
-    FILE *fp = NULL;
-    char path[256];
-    const char *searchPaths[] = {
-        "data/ext2",
-        "data/fat16",
-        "../data/ext2",
-        "../data/fat16"
-    };
-    size_t i;
-
-    for (i = 0; i < sizeof(searchPaths) / sizeof(searchPaths[0]); i++) {
-        snprintf(path, sizeof(path), "%s/%s", searchPaths[i], filename);
-        fp = fopen(path, "rb");
-
-        if (fp != NULL) {
-            return fp;
-        }
-    }
-
-    return NULL;
+    return fopen(filename, "rb");
 }
 
 int isEXT2 (FILE *fp) {
@@ -70,8 +51,10 @@ int isEXT2 (FILE *fp) {
 int isFAT16 (FILE *fp) {
     char fsType[6];
 
-    fseek(fp, 54, SEEK_SET);
-    fread(fsType, sizeof(char), 5, fp);
+    if((fseek(fp, 54, SEEK_SET) != 0) || (fread(fsType, sizeof(char), 5, fp) != 5)) {
+        return 0;
+    }
+
     fsType[5] = '\0';
 
     if (strcmp(fsType, "FAT16") == 0) {

@@ -53,15 +53,7 @@ La forma recomendada para ejecutar el programa es desde la raiz:
 ./fsutils --cat <imagen> <fichero>
 ```
 
-Tambien puede ejecutarse desde `src` si el binario esta ahi.
-
-El programa busca las imagenes automaticamente en:
-- `data/ext2`
-- `data/fat16`
-- `../data/ext2`
-- `../data/fat16`
-
-Por eso funciona tanto desde la raiz como desde `src`.
+Tambien puede ejecutarse desde `src` si el binario esta ahi, siempre que la ruta al fichero sea correcta.
 
 Uso general:
 
@@ -76,29 +68,25 @@ Uso general:
 Mostrar informacion de una imagen `EXT2`:
 
 ```bash
-cd src
-./fsutils --info studentext100MB
+./fsutils --info data/ext2/studentext100MB
 ```
 
 Mostrar informacion de una imagen `FAT16`:
 
 ```bash
-cd src
-./fsutils --info studentfat100MB
+./fsutils --info data/fat16/studentfat100MB
 ```
 
 Mostrar el arbol de directorios de una imagen `FAT16`:
 
 ```bash
-cd src
-./fsutils --tree studentfat100MB
+./fsutils --tree data/fat16/studentfat100MB
 ```
 
 Mostrar el contenido de un fichero dentro de una imagen `FAT16`:
 
 ```bash
-cd src
-./fsutils --cat studentfat100MB practica.c
+./fsutils --cat data/fat16/studentfat100MB practica.c
 ```
 
 ## Como funciona

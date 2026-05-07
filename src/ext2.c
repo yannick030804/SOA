@@ -251,30 +251,30 @@ void format_timestamp(uint32_t rawTime, char *buffer, size_t bufferSize) {
  * Display and show detailed information about an EXT2 filesystem
  */
 void showInfoEXT2 (EXT2Info ext2, uint32_t blockSize, const char *lastMountStr, const char *lastWriteStr, const char *lastCheckStr) {
-    printf("------ Filesystem Information ------\n\n");
+    printf("\n------ Filesystem Information ------\n\n");
     printf("Filesystem: EXT2\n\n");
 
     printf("INODE INFO\n");
-    printf("Size: %u\n", ext2.inodeSize);
-    printf("Num Inodes: %u\n", ext2.numInodes);
-    printf("First Inode: %u\n", ext2.firstInode);
-    printf("Inodes Group: %u\n", ext2.inodesPerGroup);
-    printf("Free Inodes: %u\n\n", ext2.freeInodes);
+    printf("  Size: %u\n", ext2.inodeSize);
+    printf("  Num Inodes: %u\n", ext2.numInodes);
+    printf("  First Inode: %u\n", ext2.firstInode);
+    printf("  Inodes Group: %u\n", ext2.inodesPerGroup);
+    printf("  Free Inodes: %u\n\n", ext2.freeInodes);
 
     printf("INFO BLOCK\n");
-    printf("Block size: %u\n", blockSize);
-    printf("Reserved blocks: %u\n", ext2.reservedBlocks);
-    printf("Free blocks: %u\n", ext2.freeBlocks);
-    printf("Total blocks: %u\n", ext2.numBlocks);
-    printf("First block: %u\n", ext2.firstBlock);
-    printf("Group blocks: %u\n", ext2.blocksPerGroup);
-    printf("Group frags: %u\n\n", ext2.fragsPerGroup);
+    printf("  Block size: %u\n", blockSize);
+    printf("  Reserved blocks: %u\n", ext2.reservedBlocks);
+    printf("  Free blocks: %u\n", ext2.freeBlocks);
+    printf("  Total blocks: %u\n", ext2.numBlocks);
+    printf("  First block: %u\n", ext2.firstBlock);
+    printf("  Group blocks: %u\n", ext2.blocksPerGroup);
+    printf("  Group frags: %u\n\n", ext2.fragsPerGroup);
 
     printf("INFO VOLUME\n");
-    printf("Volume name: %s\n", ext2.volumeName);
-    printf("Last Checked: %s\n", lastCheckStr);
-    printf("Last Mounted: %s\n", lastMountStr);
-    printf("Last Written: %s\n", lastWriteStr);
+    printf("  Volume name: %s\n", ext2.volumeName);
+    printf("  Last Checked: %s\n", lastCheckStr);
+    printf("  Last Mounted: %s\n", lastMountStr);
+    printf("  Last Written: %s\n", lastWriteStr);
 }
 
 /*
